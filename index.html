@@ -1,86 +1,33 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Мой абонемент</title>
-<style>
-  body{font-family:system-ui,sans-serif;max-width:480px;margin:20px auto;padding:0 16px;background:#f7f7f7}
-  .card{background:#fff;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-  h1{font-size:22px;margin:0 0 16px}
-  label{display:block;font-size:14px;color:#666;margin:12px 0 4px}
-  input,select{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:16px;box-sizing:border-box}
-  button{width:100%;padding:12px;border:none;border-radius:8px;background:#2e7d32;color:#fff;font-size:16px;margin-top:16px;cursor:pointer}
-  .progress{height:12px;background:#eee;border-radius:6px;overflow:hidden;margin-top:8px}
-  .progress div{height:100%;background:#2e7d32;transition:.3s}
-  .left{font-size:32px;font-weight:bold;color:#2e7d32;margin-top:12px}
-  .warn{color:#c62828;font-weight:bold}
-  .small{font-size:13px;color:#888;margin-top:8px}
-</style>
-</head>
-<body>
-<h1>🐕 Мой абонемент</h1>
-
-<div class="card">
-  <label>Ваше имя</label>
-  <input id="name" placeholder="Имя и кличка собаки">
-  <label>Тип занятий</label>
-  <select id="type">
-    <option>Дрессировка</option>
-    <option>Хендлинг</option>
-    <option>Реабилитация</option>
-  </select>
-  <label>Всего занятий в абонементе</label>
-  <input id="total" type="number" value="8" min="1">
-  <label>Дата оплаты</label>
-  <input id="paid" type="date">
-  <button onclick="save()">Сохранить</button>
-</div>
-
-<div class="card" id="status" style="display:none">
-  <h2 style="font-size:18px;margin:0 0 12px" id="title"></h2>
-  <div class="left"><span id="remain">0</span> из <span id="totalOut">8</span> занятий</div>
-  <div class="progress"><div id="bar" style="width:0%"></div></div>
-  <p class="small">Оплачено: <span id="paidOut"></span></p>
-  <p id="payNote" class="warn"></p>
-  <button onclick="attend()" style="background:#1976d2">✓ Отметить посещение</button>
-  <button onclick="resetAtt()" style="background:#888;margin-top:8px">Сбросить посещения</button>
-</div>
-
+<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Мой абонемент</title><style>
+body{font-family:system-ui;max-width:440px;margin:16px auto;padding:0 14px;background:#f7f7f7}
+.card{background:#fff;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px #0001}
+input{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:16px;box-sizing:border-box}
+button{width:100%;padding:12px;border:0;border-radius:8px;background:#2e7d32;color:#fff;font-size:16px;margin-top:12px}
+.left{font-size:30px;font-weight:bold;color:#2e7d32;margin-top:10px}
+.warn{color:#c62828;font-weight:bold}
+</style></head><body>
+<h2>🐕 Мой абонемент</h2>
+<div class="card"><input id="ph" placeholder="Ваш телефон">
+<button onclick="get()">Проверить</button></div>
+<div class="card" id="out" style="display:none"></div>
 <script>
-const K='abonement';
-function load(){return JSON.parse(localStorage.getItem(K)||'null')}
-function save(){
-  const d={
-    name:name.value, type:type.value, total:+total.value,
-    paid:paid.value, used:load()?.used||0
-  };
-  localStorage.setItem(K,JSON.stringify(d));render();
+const API='https://script.google.com/macros/s/AKfycbzEyKQx9QvYiD4uNnyzyEBKfugBApz2F6qC7pBnGEcVMW9-EyfBzoz8376wGXxEGV4/exec';
+async function get(){
+ const ph=document.getElementById('ph').value.trim();
+ if(!ph)return;
+ const r=await(await fetch(API+'?action=get&phone='+encodeURIComponent(ph))).json();
+ const o=document.getElementById('out');o.style.display='block';
+ if(r.error){o.innerHTML='<p class="warn">Абонемент не найден</p>';return}
+ const left=r[3]-r[4];
+ o.innerHTML=`<b>${r[0]}</b> — ${r[2]}<div class="left">${left} из ${r[3]}</div>
+ <p>Оплачено: ${r[5]}</p>
+ <p class="${left<=2?'warn':''}">${left<=0?'⚠️ Абонемент закончился':left<=2?'⚠️ Скоро оплата':''}</p>
+ <button onclick="att('${r[1]}')">✓ Я посетил занятие</button>`;
 }
-function attend(){
-  const d=load(); if(!d) return;
-  if(d.used<d.total){d.used++;localStorage.setItem(K,JSON.stringify(d))}
-  render();
+async function att(ph){
+ await fetch(API+'?action=attend&phone='+encodeURIComponent(ph));
+ get();
 }
-function resetAtt(){
-  const d=load(); if(!d) return; d.used=0;
-  localStorage.setItem(K,JSON.stringify(d));render();
-}
-function render(){
-  const d=load(); if(!d) return;
-  status.style.display='block';
-  title.textContent=`${d.name} — ${d.type}`;
-  const remain=d.total-d.used;
-  document.getElementById('remain').textContent=remain;
-  document.getElementById('totalOut').textContent=d.total;
-  document.getElementById('paidOut').textContent=d.paid||'—';
-  bar.style.width=(d.used/d.total*100)+'%';
-  payNote.textContent = remain<=0
-    ? '⚠️ Абонемент закончился — пора продлить!'
-    : (remain<=2 ? '⚠️ Осталось мало занятий, скоро оплата' : '');
-  name.value=d.name;type.value=d.type;total.value=d.total;paid.value=d.paid;
-}
-render();
-</script>
-</body>
-</html>
+</script></body></html>
