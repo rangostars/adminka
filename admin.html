@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Админка</title><style>
+body{font-family:system-ui;margin:16px;background:#f7f7f7}
+table{width:100%;border-collapse:collapse;background:#fff;font-size:14px}
+td,th{padding:8px;border-bottom:1px solid #eee;text-align:left}
+input,select,button{padding:8px;margin:4px 0;font-size:14px}
+.warn{color:#c62828;font-weight:bold}
+</style></head><body>
+<h2>Админка центра</h2>
+<input id="key" type="password" placeholder="Пароль"> <button onclick="load()">Войти</button>
+<table id="t"><thead><tr><th>Имя</th><th>Телефон</th><th>Тип</th><th>Остаток</th><th>Оплата</th><th>Действие</th></tr></thead><tbody></tbody></table>
+<h3>Добавить</h3>
+<input id="n" placeholder="Имя"> <input id="p" placeholder="Телефон"> <input id="ty" placeholder="Тип">
+<input id="tot" type="number" placeholder="Занятий" value="8"> <button onclick="add()">Добавить</button>
+<script>
+const API='https://script.google.com/macros/s/AKfycbzEyKQx9QvYiD4uNnyzyEBKfugBApz2F6qC7pBnGEcVMW9-EyfBzoz8376wGXxEGV4/exec';let KEY='';
+async function load(){
+ KEY=document.getElementById('key').value;
+ const r=await(await fetch(API+'?action=list&key='+KEY)).json();
+ if(r.error){alert('Неверный пароль');return}
+ const tb=document.querySelector('#t tbody');tb.innerHTML='';
+ r.forEach(c=>{const left=c[3]-c[4];
+ tb.innerHTML+=`<tr><td>${c[0]}</td><td>${c[1]}</td><td>${c[2]}</td>
+ <td class="${left<=2?'warn':''}">${left}/${c[3]}</td><td>${c[5]}</td>
+ <td><button onclick="pay('${c[1]}')">Оплачено</button></td></tr>`});
+}
+async function add(){
+ await fetch(API+'?action=add&key='+KEY+'&name='+n.value+'&phone='+p.value+'&type='+ty.value+'&total='+tot.value);
+ load();
+}
+async function pay(ph){
+ const d=prompt('Дата оплаты (ГГГГ-ММ-ДД):',new Date().toISOString().slice(0,10));
+ if(!d)return;
+ await fetch(API+'?action=pay&key='+KEY+'&phone='+ph+'&paid='+d);
+ load();
+}
+</script></body></html>
