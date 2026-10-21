@@ -9,25 +9,31 @@ button{width:100%;padding:12px;border:0;border-radius:8px;background:#2e7d32;col
 .warn{color:#c62828;font-weight:bold}
 </style></head><body>
 <h2>🐕 Мой абонемент</h2>
-<div class="card"><input id="ph" placeholder="Ваш телефон">
-<button onclick="get()">Проверить</button></div>
+<div class="card">
+  <input id="ph" placeholder="Ваш телефон">
+  <input id="pin" type="password" inputmode="numeric" maxlength="4" placeholder="PIN (4 цифры)" style="margin-top:8px">
+  <button onclick="get()">Проверить</button>
+</div>
 <div class="card" id="out" style="display:none"></div>
 <script>
 const API='https://script.google.com/macros/s/AKfycbzEyKQx9QvYiD4uNnyzyEBKfugBApz2F6qC7pBnGEcVMW9-EyfBzoz8376wGXxEGV4/exec';
 async function get(){
- const ph=document.getElementById('ph').value.trim();
- if(!ph)return;
- const r=await(await fetch(API+'?action=get&phone='+encodeURIComponent(ph))).json();
- const o=document.getElementById('out');o.style.display='block';
- if(r.error){o.innerHTML='<p class="warn">Абонемент не найден</p>';return}
- const left=r[3]-r[4];
- o.innerHTML=`<b>${r[0]}</b> — ${r[2]}<div class="left">${left} из ${r[3]}</div>
- <p>Оплачено: ${r[5]}</p>
- <p class="${left<=2?'warn':''}">${left<=0?'⚠️ Абонемент закончился':left<=2?'⚠️ Скоро оплата':''}</p>
- <button onclick="att('${r[1]}')">✓ Я посетил занятие</button>`;
+  const ph=document.getElementById('ph').value.trim();
+  const pin=document.getElementById('pin').value.trim();
+  const o=document.getElementById('out');
+  o.style.display='block';
+  if(!ph){o.innerHTML='<p class="warn">Введите телефон</p>';return}
+  const r=await(await fetch(API+'?action=get&phone='+encodeURIComponent(ph)+'&pin='+encodeURIComponent(pin))).json();
+  if(r.error==='pin'){o.innerHTML='<p class="warn">Неверный PIN</p>';return}
+  if(r.error){o.innerHTML='<p class="warn">Абонемент не найден</p>';return}
+  const left=r[3]-r[4];
+  o.innerHTML=`<b>${r[0]}</b> — ${r[2]}<div class="left">${left} из ${r[3]}</div>
+  <p>Оплачено: ${r[5]}</p>
+  <p class="${left<=2?'warn':''}">${left<=0?'⚠️ Абонемент закончился':left<=2?'⚠️ Скоро оплата':''}</p>
+  <button onclick="att('${r[1]}','${pin}')">✓ Я посетил занятие</button>`;
 }
-async function att(ph){
- await fetch(API+'?action=attend&phone='+encodeURIComponent(ph));
- get();
+async function att(ph,pin){
+  await fetch(API+'?action=attend&phone='+encodeURIComponent(ph)+'&pin='+encodeURIComponent(pin));
+  get();
 }
 </script></body></html>
